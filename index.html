@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MediSys Patient Monitoring Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0077b6 0%, #00b4d8 50%, #48cae4 100%);
+      min-height: 100vh;
+      color: #2d3748;
+    }
+
+    .navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 1rem 2rem;
+      box-shadow: 0 8px 32px rgba(0, 119, 182, 0.15);
+    }
+
+    .nav-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    .logo h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo p {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .refresh-btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .refresh-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+    }
+
+    .refresh-btn.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .refresh-btn.loading .fa-sync {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 119, 182, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--accent-color);
+      border-radius: 20px 20px 0 0;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 119, 182, 0.25);
+    }
+
+    .stat-card.total {
+      --accent-color: linear-gradient(135deg, #0077b6, #00b4d8);
+    }
+
+    .stat-card.critical {
+      --accent-color: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .stat-card.normal {
+      --accent-color: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .stat-card.total .stat-icon {
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+    }
+
+    .stat-card.critical .stat-icon {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .stat-card.normal .stat-icon {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .stat-number {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card.total .stat-number {
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card.critical .stat-number {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card.normal .stat-number {
+      background: linear-gradient(135deg, #10b981, #059669);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .main-panel {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 119, 182, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, rgba(0, 119, 182, 0.1), rgba(0, 180, 216, 0.1));
+      padding: 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .panel-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .search-container {
+      position: relative;
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 16px 50px 16px 20px;
+      font-size: 1rem;
+      border: 2px solid rgba(0, 119, 182, 0.2);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #0077b6;
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #0077b6;
+      font-size: 1.2rem;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 10px;
+      background: rgba(0, 119, 182, 0.1);
+      padding: 8px;
+      border-radius: 15px;
+    }
+
+    .filter-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: transparent;
+      color: #64748b;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      color: white;
+      box-shadow: 0 4px 15px rgba(0, 119, 182, 0.4);
+    }
+
+    .panel-content {
+      padding: 0;
+    }
+
+    .table-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 119, 182, 0.05);
+    }
+
+    .table-count {
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .patients-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .patients-table th {
+      padding: 1.5rem 2rem;
+      text-align: left;
+      font-weight: 700;
+      color: #1e293b;
+      background: rgba(0, 119, 182, 0.05);
+      border-bottom: 2px solid rgba(0, 119, 182, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.9rem;
+    }
+
+    .patients-table td {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      vertical-align: middle;
+    }
+
+    .patients-table tr {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .patients-table tr:hover {
+      background: linear-gradient(135deg, rgba(0, 119, 182, 0.05), rgba(0, 180, 216, 0.05));
+      transform: scale(1.01);
+    }
+
+    .patient-id {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge.critical {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .status-badge.normal {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .vital-sign {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .timestamp {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #64748b;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(0, 119, 182, 0.2);
+      border-left: 4px solid #0077b6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #64748b;
+    }
+
+    .empty-state .fa-user-injured {
+      font-size: 4rem;
+      color: rgba(0, 119, 182, 0.3);
+      margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #1e293b;
+    }
+
+    .error-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #dc2626;
+    }
+
+    .error-state .fa-exclamation-triangle {
+      font-size: 4rem;
+      color: rgba(239, 68, 68, 0.3);
+      margin-bottom: 1rem;
+    }
+
+    .patient-detail-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .modal-content {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 119, 182, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      overflow: hidden;
+      max-height: 90vh;     /* Limit height of modal to 90% of screen */
+      overflow-y: auto;     /* Enable vertical scroll when content is too tall */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      color: white;
+      padding: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-body {
+      padding: 2rem;
+      padding: 2rem;
+      flex: 1;
+      overflow-y: auto;  /* optional if content inside may grow */
+    }
+
+    .patient-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .info-card {
+      background: rgba(0, 119, 182, 0.05);
+      padding: 1.5rem;
+      border-radius: 15px;
+      border: 1px solid rgba(0, 119, 182, 0.1);
+    }
+
+    .info-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .readings-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .readings-table th,
+    .readings-table td {
+      padding: 1rem 1.5rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 119, 182, 0.1);
+    }
+
+    .readings-table th {
+      background: rgba(0, 119, 182, 0.05);
+      font-weight: 700;
+      color: #1e293b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .nav-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-container {
+        min-width: auto;
+        max-width: none;
+      }
+
+      .filter-group {
+        justify-content: center;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .patients-table {
+        font-size: 0.9rem;
+      }
+
+      .patients-table th,
+      .patients-table td {
+        padding: 1rem;
+      }
+
+      .modal-content {
+        margin: 1rem;
+        width: calc(100% - 2rem);
+      }
+
+      .patient-info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <script src="auth.js"></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-content">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-heartbeat"></i>
+        </div>
+        <div>
+          <h1>MediSys Diagnostics</h1>
+          <p>Patient Monitoring System</p>
+        </div>
+      </div>
+      <div class="nav-actions">
+        
+        <button class="refresh-btn" id="refresh-btn">
+          <i class="fas fa-sync"></i>
+          Refresh Data
+        </button>
+        
+        <!-- <a href="#" onclick="logout(); return false;">Log out</a> -->
+         <a href="#" onclick="logout(); return false;" style="
+    background: linear-gradient(135deg, #9b5b5b, #952525);
+    color: white;
+    padding: 10px 29px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(200, 79, 79, 0.3);
+" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(239, 68, 68, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(239, 68, 68, 0.3)'">
+    <i class="fas fa-sign-out-alt"></i> Log Out
+</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+        </div>
+        <div class="stat-number" id="total-patients">0</div>
+        <div class="stat-label">Total Patients</div>
+      </div>
+      
+      <div class="stat-card critical">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+        </div>
+        <div class="stat-number" id="critical-patients">0</div>
+        <div class="stat-label">Critical Patients</div>
+      </div>
+      
+      <div class="stat-card normal">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+        <div class="stat-number" id="normal-patients">0</div>
+        <div class="stat-label">Normal Patients</div>
+      </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="main-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="fas fa-table"></i>
+          Patient Overview
+        </h2>
+        
+        <div class="controls">
+          <div class="search-container">
+            <input 
+              type="text" 
+              class="search-input" 
+              id="search-input" 
+              placeholder="Search patient ID (e.g., P001)..."
+              autocomplete="off"
+            />
+            <i class="fas fa-search search-icon"></i>
+          </div>
+          
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">
+              <i class="fas fa-list"></i> All
+            </button>
+            <button class="filter-btn" data-filter="critical">
+              <i class="fas fa-exclamation-triangle"></i> Critical
+            </button>
+            <button class="filter-btn" data-filter="normal">
+              <i class="fas fa-check-circle"></i> Normal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-content">
+        <div class="table-header">
+          <div class="table-count" id="table-count">Loading patient data...</div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state">
+          <div class="loading-spinner"></div>
+          <h3>Loading Patient Data</h3>
+          <p>Please wait while we fetch the latest patient information...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error-state" style="display: none;">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Unable to Load Data</h3>
+          <p id="error-message">There was an error loading patient data. Please try refreshing.</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <i class="fas fa-user-injured"></i>
+          <h3>No Patients Found</h3>
+          <p>No patients match your current search or filter criteria.</p>
+        </div>
+
+        <!-- Patients Table -->
+        <table class="patients-table" id="patients-table" style="display: none;">
+          <thead>
+            <tr>
+              <th><i class="fas fa-id-card"></i> Patient ID</th>
+              <th><i class="fas fa-heartbeat"></i> Status</th>
+              <th><i class="fas fa-clock"></i> Last Updated</th>
+              <th><i class="fas fa-heart"></i> Heart Rate</th>
+              <th><i class="fas fa-lungs"></i> Oxygen Level</th>
+              <th><i class="fas fa-thermometer-half"></i> Temperature</th>
+            </tr>
+          </thead>
+          <tbody id="patients-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient Detail Modal -->
+  <div id="patient-modal" class="patient-detail-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="fas fa-user-md"></i>
+          Patient Details: <span id="modal-patient-id">P001</span>
+        </h2>
+        <button class="close-btn" id="close-modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="patient-info-grid" id="patient-info-grid">
+          <!-- Patient info cards will be populated here -->
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #1e293b;">
+          <i class="fas fa-chart-line"></i>
+          Recent Readings History
+        </h3>
+        
+        <div style="overflow-x: auto;">
+          <table class="readings-table" id="patient-readings-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Heart Rate</th>
+                <th>Oxygen Level</th>
+                <th>Temperature</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="patient-readings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
